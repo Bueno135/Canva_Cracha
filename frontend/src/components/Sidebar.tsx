@@ -94,35 +94,7 @@ export const Sidebar: React.FC = () => {
 
                 <hr className="border-gray-200" />
 
-                {/* Variables (Tags) */}
-                <div className="flex flex-col gap-2">
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Dados Variáveis</span>
-                    <div className="flex flex-wrap gap-2">
-                        {['{{Nome}}', '{{Cargo}}', '{{Setor}}', '{{Matrícula}}'].map(tag => (
-                            <button
-                                key={tag}
-                                onClick={() => {
-                                    // Check if we have a single text element selected
-                                    const { selectedIds, elements, updateElement } = useBadgeStore.getState();
-                                    const selectedId = selectedIds.length === 1 ? selectedIds[0] : null;
-                                    const selectedEl = selectedId ? elements.find(el => el.id === selectedId) : null;
 
-                                    if (selectedEl && selectedEl.type === 'text') {
-                                        // Append to existing text
-                                        const newContent = selectedEl.content ? selectedEl.content + ' ' + tag : tag;
-                                        updateElement(selectedEl.id, { content: newContent });
-                                    } else {
-                                        // Create new
-                                        addElement('text', { content: tag });
-                                    }
-                                }}
-                                className="px-2 py-1 text-xs bg-blue-50 text-brand-blue border border-blue-100 rounded hover:bg-blue-100 transition-colors"
-                            >
-                                {tag}
-                            </button>
-                        ))}
-                    </div>
-                </div>
 
                 {/* Elements */}
                 <div className="flex flex-col gap-3">
@@ -149,7 +121,7 @@ export const Sidebar: React.FC = () => {
                         className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded hover:border-brand-blue hover:text-brand-blue transition-all group"
                     >
                         <ImageIcon size={20} className="text-gray-500 group-hover:text-brand-blue" />
-                        <span className="text-sm font-medium text-gray-700 group-hover:text-brand-blue">Imagem do Sistema</span>
+                        <span className="text-sm font-medium text-gray-700 group-hover:text-brand-blue">Imagem</span>
                     </button>
                 </div>
 

@@ -84,6 +84,25 @@ export const PropertiesPanel: React.FC = () => {
                             {selectedElement.content || 'Sem conteúdo'}
                         </div>
                     )}
+                    {isText && (
+                        <div className="flex flex-col gap-2 mt-2">
+                            <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Inserir Variável</span>
+                            <div className="flex flex-wrap gap-2">
+                                {['{{Nome}}', '{{Cargo}}', '{{Setor}}', '{{Matrícula}}', '{{CPF}}'].map(tag => (
+                                    <button
+                                        key={tag}
+                                        onClick={() => {
+                                            const newContent = selectedElement.content ? selectedElement.content + ' ' + tag : tag;
+                                            handleChange('content', newContent);
+                                        }}
+                                        className="px-2 py-1 text-xs bg-blue-50 text-blue-600 border border-blue-100 rounded hover:bg-blue-100 transition-colors"
+                                    >
+                                        {tag}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <hr className="border-gray-100" />
