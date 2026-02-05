@@ -10,6 +10,12 @@ export const PropertiesPanel: React.FC = () => {
 
     const selectedElement = elements.find(el => selectedIds.includes(el.id));
     const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
+    const selectionRangeRef = React.useRef<{ start: number; end: number } | null>(null);
+
+    // Reset selection tracking when switching elements
+    React.useEffect(() => {
+        selectionRangeRef.current = null;
+    }, [selectedElement?.id]);
 
     if (!selectedElement) {
         return (
@@ -29,6 +35,14 @@ export const PropertiesPanel: React.FC = () => {
 
     // Helpers
     const handleChange = (key: string, value: any) => updateElement(selectedElement.id, { [key]: value });
+
+    const handleTextareaSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+        const target = e.currentTarget;
+        selectionRangeRef.current = {
+            start: target.selectionStart,
+            end: target.selectionEnd
+        };
+    };
 
     return (
         <div className="w-80 bg-white border-l border-gray-200 flex flex-col h-full overflow-y-auto custom-scrollbar">
@@ -53,17 +67,21 @@ export const PropertiesPanel: React.FC = () => {
                                     onChange={(e) => handleChange('content', e.target.value)}
                                     className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                                 >
-                                    <option value="{{nome}}">Nome</option>
-                                    <option value="{{cargo}}">Cargo</option>
-                                    <option value="{{setor}}">Setor</option>
-                                    <option value="{{matricula}}">Matrícula</option>
-                                    <option value="{{cpf}}">CPF</option>
+                                    <option value="{{Nome}}">Nome</option>
+                                    <option value="{{Cargo}}">Cargo</option>
+                                    <option value="{{Setor}}">Setor</option>
+                                    <option value="{{Matrícula}}">Matrícula</option>
+                                    <option value="{{CPF}}">CPF</option>
                                 </select>
                             ) : (
                                 <textarea
                                     ref={textAreaRef}
                                     value={selectedElement.content}
                                     onChange={(e) => handleChange('content', e.target.value)}
+                                    onSelect={handleTextareaSelect}
+                                    onClick={handleTextareaSelect}
+                                    onKeyUp={handleTextareaSelect}
+                                    onBlur={handleTextareaSelect}
                                     rows={3}
                                     className="w-full border border-gray-300 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-y"
                                 />
@@ -73,7 +91,7 @@ export const PropertiesPanel: React.FC = () => {
                                     type="checkbox"
                                     id="isDynamic"
                                     checked={isDynamic}
-                                    onChange={(e) => handleChange('content', e.target.checked ? '{{nome}}' : 'Novo Texto')}
+                                    onChange={(e) => handleChange('content', e.target.checked ? '{{Nome}}' : 'Novo Texto')}
                                     className="rounded text-blue-600 focus:ring-blue-500"
                                 />
                                 <label htmlFor="isDynamic" className="text-sm text-gray-600 select-none cursor-pointer">Tag Dinâmica</label>
@@ -94,23 +112,36 @@ export const PropertiesPanel: React.FC = () => {
                                     <button
                                         key={tag}
                                         onMouseDown={(e) => {
-                                            e.preventDefault(); // Keep focus on textarea/input
-                                            const textarea = textAreaRef.current;
+                                            e.preventDefault(); // Prevent focus loss
 
-                                            if (textarea && !isDynamic) { // Only splice if editing raw text
-                                                const start = textarea.selectionStart;
-                                                const end = textarea.selectionEnd;
+                                            const textarea = textAreaRef.current;
+                                            if (textarea && !isDynamic) {
+                                                // Prefer cached selection, fallback to current or end of text
+                                                const captured = selectionRangeRef.current;
+
+                                                // Logic: If we have a captured valid range, use it.
+                                                // If not, use current textarea state (if valid).
+                                                // Default to END of text.
+
+                                                const start = captured ? captured.start : (textarea.selectionStart || selectedElement.content?.length || 0);
+                                                const end = captured ? captured.end : (textarea.selectionEnd || selectedElement.content?.length || 0);
+
                                                 const text = selectedElement.content || '';
                                                 const newContent = text.substring(0, start) + tag + text.substring(end);
                                                 handleChange('content', newContent);
 
-                                                // Restore cursor position after update (needs timeout for render)
+                                                // Restore cursor position
+                                                const newCursorPos = start + tag.length;
+
+                                                // Update ref for next click if needed (continuous clicking)
+                                                selectionRangeRef.current = { start: newCursorPos, end: newCursorPos };
+
                                                 setTimeout(() => {
                                                     textarea.focus();
-                                                    textarea.setSelectionRange(start + tag.length, start + tag.length);
+                                                    textarea.setSelectionRange(newCursorPos, newCursorPos);
                                                 }, 0);
                                             } else {
-                                                // Fallback or Dynamic Mode replace
+                                                // Fallback
                                                 const newContent = selectedElement.content ? selectedElement.content + ' ' + tag : tag;
                                                 handleChange('content', newContent);
                                             }
