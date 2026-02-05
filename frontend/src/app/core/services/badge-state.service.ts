@@ -154,14 +154,14 @@ export class BadgeStateService {
                 if (el.id !== selectedId) return el;
 
                 const currentFontSize = parseInt(el.style['fontSize']?.toString() || '14', 10);
-                const newFontSize = Math.max(8, currentFontSize + (delta * 2));
+                const newFontSize = Math.max(4, currentFontSize + (delta * 2));
                 const widthScale = Math.round(el.width * 0.1);
                 const heightScale = Math.round(el.height * 0.1);
 
                 return {
                     ...el,
-                    width: Math.max(20, el.width + (delta * Math.max(widthScale, 5))),
-                    height: Math.max(10, el.height + (delta * Math.max(heightScale, 3))),
+                    width: Math.max(5, el.width + (delta * Math.max(widthScale, 5))),
+                    height: Math.max(5, el.height + (delta * Math.max(heightScale, 3))),
                     style: {
                         ...el.style,
                         fontSize: `${newFontSize}px`

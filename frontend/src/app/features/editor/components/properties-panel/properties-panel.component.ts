@@ -165,7 +165,7 @@ import { PhotoShape } from '../../../../core/models/badge.model';
           <div class="property-group">
             <label>Tamanho</label>
             <div class="size-slider">
-              <input type="range" min="8" max="72" 
+              <input type="range" min="4" max="300" 
                      [ngModel]="parseInt(element.style['fontSize'])" 
                      (ngModelChange)="updateStyle('fontSize', $event + 'px', element.id)">
               <span class="size-value">{{ parseInt(element.style['fontSize']) }}px</span>
@@ -196,7 +196,7 @@ import { PhotoShape } from '../../../../core/models/badge.model';
 
           <!-- Text Alignment -->
           <div class="property-group">
-            <label>Alinhamento</label>
+            <label>Alinhamento e Orientação</label>
             <div class="alignment-buttons">
               <button class="align-btn" 
                       [class.active]="(element.style['textAlign'] || 'left') === 'left'"
@@ -217,6 +217,14 @@ import { PhotoShape } from '../../../../core/models/badge.model';
                       [class.active]="element.style['textAlign'] === 'justify'"
                       (click)="updateStyle('textAlign', 'justify', element.id)">
                 ☰
+              </button>
+              
+              <!-- Vertical Text Toggle -->
+              <button class="align-btn" 
+                      [class.active]="element.style['writingMode'] === 'vertical-rl'"
+                      (click)="toggleVerticalText(element.id)"
+                      title="Texto Vertical">
+                ⬇
               </button>
             </div>
           </div>
@@ -363,6 +371,14 @@ export class PropertiesPanelComponent {
   toggleTextDecoration(id: string) {
     const current = this.selectedElement()?.style['textDecoration'];
     this.updateStyle('textDecoration', current === 'underline' ? 'none' : 'underline', id);
+  }
+
+  toggleVerticalText(id: string) {
+    const current = this.selectedElement()?.style['writingMode'];
+    // Toggle between vertical-rl and horizontal-tb (default)
+    this.updateStyle('writingMode', current === 'vertical-rl' ? 'horizontal-tb' : 'vertical-rl', id);
+
+    // Also adjust min-height/width if needed, but flex/flow usually handles it.
   }
 
   updateBorderColor(color: string, id: string) {

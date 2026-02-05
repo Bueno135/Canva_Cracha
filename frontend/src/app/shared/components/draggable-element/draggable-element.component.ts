@@ -28,6 +28,7 @@ import { ShapeRendererComponent } from '../shape-renderer/shape-renderer.compone
                 (blur)="onBlur()"
                 (keydown.enter)="$event.preventDefault(); onBlur()"
                 class="edit-input"
+                [style.writing-mode]="element.style['writingMode'] || 'horizontal-tb'"
                 autofocus
             ></textarea>
         } @else {
@@ -329,16 +330,16 @@ export class DraggableElementComponent {
     let newY = this.startTop;
 
     // Horizontal Resize (Pills)
-    if (this.activeHandle.includes('e')) newWidth = Math.max(20, this.startWidth + dx);
+    if (this.activeHandle.includes('e')) newWidth = Math.max(5, this.startWidth + dx);
     if (this.activeHandle.includes('w')) {
-      newWidth = Math.max(20, this.startWidth - dx);
+      newWidth = Math.max(5, this.startWidth - dx);
       newX = this.startLeft + dx;
     }
 
     // Vertical/Corner Resize
-    if (this.activeHandle.includes('s')) newHeight = Math.max(20, this.startHeight + dy);
+    if (this.activeHandle.includes('s')) newHeight = Math.max(5, this.startHeight + dy);
     if (this.activeHandle.includes('n')) {
-      newHeight = Math.max(20, this.startHeight - dy);
+      newHeight = Math.max(5, this.startHeight - dy);
       newY = this.startTop + dy;
     }
 
@@ -348,7 +349,7 @@ export class DraggableElementComponent {
     if (this.element.type === 'text' && isCorner) {
       // For text on corners, we scale font size proportional to height change
       const scaleFactor = newHeight / this.startHeight;
-      const newFontSize = Math.max(8, Math.round(this.startFontSize * scaleFactor));
+      const newFontSize = Math.max(4, Math.round(this.startFontSize * scaleFactor));
 
       // Update font size
       this.badgeService.updateElementStyle(this.element.id, 'fontSize', `${newFontSize}px`);
