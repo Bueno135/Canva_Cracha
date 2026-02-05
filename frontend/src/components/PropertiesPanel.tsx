@@ -9,6 +9,7 @@ export const PropertiesPanel: React.FC = () => {
     } = useBadgeStore();
 
     const selectedElement = elements.find(el => selectedIds.includes(el.id));
+    const textAreaRef = React.useRef<HTMLTextAreaElement>(null);
 
     if (!selectedElement) {
         return (
@@ -60,6 +61,7 @@ export const PropertiesPanel: React.FC = () => {
                                 </select>
                             ) : (
                                 <textarea
+                                    ref={textAreaRef}
                                     value={selectedElement.content}
                                     onChange={(e) => handleChange('content', e.target.value)}
                                     rows={3}
@@ -91,9 +93,27 @@ export const PropertiesPanel: React.FC = () => {
                                 {['{{Nome}}', '{{Cargo}}', '{{Setor}}', '{{Matrícula}}', '{{CPF}}'].map(tag => (
                                     <button
                                         key={tag}
-                                        onClick={() => {
-                                            const newContent = selectedElement.content ? selectedElement.content + ' ' + tag : tag;
-                                            handleChange('content', newContent);
+                                        onMouseDown={(e) => {
+                                            e.preventDefault(); // Keep focus on textarea/input
+                                            const textarea = textAreaRef.current;
+
+                                            if (textarea && !isDynamic) { // Only splice if editing raw text
+                                                const start = textarea.selectionStart;
+                                                const end = textarea.selectionEnd;
+                                                const text = selectedElement.content || '';
+                                                const newContent = text.substring(0, start) + tag + text.substring(end);
+                                                handleChange('content', newContent);
+
+                                                // Restore cursor position after update (needs timeout for render)
+                                                setTimeout(() => {
+                                                    textarea.focus();
+                                                    textarea.setSelectionRange(start + tag.length, start + tag.length);
+                                                }, 0);
+                                            } else {
+                                                // Fallback or Dynamic Mode replace
+                                                const newContent = selectedElement.content ? selectedElement.content + ' ' + tag : tag;
+                                                handleChange('content', newContent);
+                                            }
                                         }}
                                         className="px-2 py-1 text-xs bg-blue-50 text-blue-600 border border-blue-100 rounded hover:bg-blue-100 transition-colors"
                                     >
