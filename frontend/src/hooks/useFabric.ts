@@ -12,7 +12,8 @@ export const useFabric = (width: number, height: number) => {
             width,
             height,
             backgroundColor: '#ffffff',
-            enableRetinaScaling: true // Fix for High DPI displays
+            enableRetinaScaling: true, // Fix for High DPI displays
+            preserveObjectStacking: true, // Garante que a ordem visual bata com o array
         });
 
         setFabricCanvas(canvas);
