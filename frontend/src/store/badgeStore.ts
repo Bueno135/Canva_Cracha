@@ -13,6 +13,7 @@ interface BadgeStoreState {
     setElements: (elements: BadgeElement[]) => void;
     addElement: (type: ElementType, opts?: Partial<BadgeElement>) => void;
     updateElement: (id: string, updates: Partial<BadgeElement>) => void;
+    updateElements: (updates: { id: string; changes: Partial<BadgeElement> }[]) => void;
     selectElement: (id: string | null, multi?: boolean) => void;
     deleteSelected: () => void;
     setActiveSide: (side: BadgeSide) => void;
@@ -87,6 +88,18 @@ export const useBadgeStore = create<BadgeStoreState>((set, get) => ({
                 el.id === id ? { ...el, ...updates } : el
             )
         }));
+    },
+
+    updateElements: (updates) => {
+        set((state) => {
+            const updatesMap = new Map(updates.map(u => [u.id, u.changes]));
+            return {
+                elements: state.elements.map(el => {
+                    const changes = updatesMap.get(el.id);
+                    return changes ? { ...el, ...changes } : el;
+                })
+            };
+        });
     },
 
     selectElement: (id, multi = false) => {

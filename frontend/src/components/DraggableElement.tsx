@@ -11,7 +11,7 @@ interface DraggableElementProps {
 
 export const DraggableElement: React.FC<DraggableElementProps> = ({ element }) => {
     const {
-        selectedIds, selectElement, updateElement, scale, activeSide
+        selectedIds, selectElement, updateElement, updateElements, scale, activeSide
     } = useBadgeStore();
 
     const isSelected = selectedIds.includes(element.id);
@@ -25,29 +25,65 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({ element }) =
         e.preventDefault();
         e.stopPropagation();
 
-        selectElement(element.id, e.shiftKey);
+        // 1. Get fresh state
+        const state = useBadgeStore.getState();
+        const { selectedIds, elements, updateElement, updateElements, selectElement } = state;
+
+        const isMultiSelect = e.shiftKey;
+        const isAlreadySelected = selectedIds.includes(element.id);
+
+        // 2. Handle selection logic for drag start
+        if (!isAlreadySelected) {
+            // If not selected, select it (and clear others if not multi)
+            selectElement(element.id, isMultiSelect);
+        }
+        // If it IS already selected and not multi, we do NOT clear others yet
+        // to allow dragging the whole group. We might clear on mouseUp if no drag happened.
+
+        // Re-read selected IDs after potential update
+        const currentSelectedIds = useBadgeStore.getState().selectedIds;
 
         // Check if clicking a handle
         if ((e.target as HTMLElement).classList.contains('handle')) return;
 
         const startX = e.clientX;
         const startY = e.clientY;
-        const elStartX = element.x;
-        const elStartY = element.y;
+
+        // 3. Capture start positions for ALL selected elements
+        // We find the elements from the store to get their current x/y
+        const draggedElements = elements.filter(el => currentSelectedIds.includes(el.id));
+        const startPositions = new Map(draggedElements.map(el => [el.id, { x: el.x, y: el.y }]));
+
+        let hasMoved = false;
 
         const onPointerMove = (moveEvent: PointerEvent) => {
             const dx = (moveEvent.clientX - startX) / scale;
             const dy = (moveEvent.clientY - startY) / scale;
 
-            updateElement(element.id, {
-                x: elStartX + dx,
-                y: elStartY + dy
-            });
+            if (Math.abs(dx) > 1 || Math.abs(dy) > 1) hasMoved = true;
+
+            // 4. Batch update all selected elements
+            const updates = Array.from(startPositions.entries()).map(([id, pos]) => ({
+                id,
+                changes: {
+                    x: pos.x + dx,
+                    y: pos.y + dy
+                }
+            }));
+
+            updateElements(updates);
         };
 
         const onPointerUp = () => {
             window.removeEventListener('pointermove', onPointerMove);
             window.removeEventListener('pointerup', onPointerUp);
+
+            // 5. Handle "Click on selected item" behavior (deselect others if no drag)
+            if (!hasMoved && !isMultiSelect && isAlreadySelected) {
+                // If we clicked an existing selection but didn't drag, and didn't hold shift,
+                // now is the time to select JUST this item.
+                selectElement(element.id, false);
+            }
         };
 
         window.addEventListener('pointermove', onPointerMove);
@@ -117,18 +153,105 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({ element }) =
         e.stopPropagation();
         e.preventDefault();
 
+        const state = useBadgeStore.getState();
+        const { selectedIds, elements, updateElement, updateElements } = state;
+
+        // Identify operating set
+        const rotatingElements = selectedIds.includes(element.id)
+            ? elements.filter(el => selectedIds.includes(el.id))
+            : [element];
+
+        if (rotatingElements.length === 0) return;
+
+        // 1. Calculate Group Center (Pivot Point)
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        rotatingElements.forEach(el => {
+            minX = Math.min(minX, el.x);
+            minY = Math.min(minY, el.y);
+            maxX = Math.max(maxX, el.x + el.width);
+            maxY = Math.max(maxY, el.y + el.height);
+        });
+        const groupCx = (minX + maxX) / 2;
+        const groupCy = (minY + maxY) / 2;
+
+        // 2. Capture Start State for all items
+        // We track the angle of the *mouse* relative to group center to determine delta
+        const startMouseX = e.clientX;
+        const startMouseY = e.clientY;
+
+        // We'll calculate angle relative to group center provided we know where the canvas is.
+        // Actually, since we only need DELTA, we can use screen coordinates if we map groupCx/Cy to screen?
+        // Easier: Convert mouse event to canvas space coordinates roughly or just use vector math on changes.
+        // Best: Map groupCx/Cy to Client Coordinates? Or map Mouse to Canvas Coordinates.
+        // Since we have `scale`, let's map Mouse -> Canvas.
+
+        // We need the Rect of the canvas container to normalize mouse, but we only have `scale`.
+        // Let's assume (e.clientX, e.clientY) is correct enough if we just calculate gradients, 
+        // BUT `groupCx` is in Canvas Space (e.g. 0-500). `e.clientX` is Screen Space (e.g. 1200).
+        // We need the canvas offset. 
+        // A simpler hack: Use the element's REF center to offset.
+        // `elementRef` gives us the DOM rect of THIS element.
+        // We know `element.x/y` (Canvas) <-> `rect.left/top` (Screen).
+        // offset X = rect.left - element.x * scale
+        // This holds true if no scrolling/panning offset issues.
+        // Let's rely on the elementRef of the *initiated* element.
+
         const rect = elementRef.current?.getBoundingClientRect();
         if (!rect) return;
 
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
+        // Calculate Canvas Origin in Screen Space
+        // rect.left is the screen X of the element's left edge
+        // element.x is the canvas X distance.
+        // So ScreenX = CanvasOriginX + CanvasX * Scale
+        // CanvasOriginX = rect.left - element.x * scale
+        const canvasOriginX = rect.left - (element.x * scale);
+        const canvasOriginY = rect.top - (element.y * scale);
+
+        const groupCxScreen = canvasOriginX + (groupCx * scale);
+        const groupCyScreen = canvasOriginY + (groupCy * scale);
+
+        const startAngleRad = Math.atan2(e.clientY - groupCyScreen, e.clientX - groupCxScreen);
+
+        const initialStates = rotatingElements.map(el => {
+            const elCx = el.x + el.width / 2;
+            const elCy = el.y + el.height / 2;
+            return {
+                id: el.id,
+                startRotation: el.rotation,
+                // Vector from Group Center to Element Center
+                vx: elCx - groupCx,
+                vy: elCy - groupCy,
+                width: el.width,
+                height: el.height
+            };
+        });
 
         const onPointerMove = (moveEvent: PointerEvent) => {
-            const dx = moveEvent.clientX - centerX;
-            const dy = moveEvent.clientY - centerY;
-            const radian = Math.atan2(dy, dx);
-            const deg = radian * (180 / Math.PI) + 90; // +90 because handle is at top
-            updateElement(element.id, { rotation: deg });
+            const currentAngleRad = Math.atan2(moveEvent.clientY - groupCyScreen, moveEvent.clientX - groupCxScreen);
+            const deltaRad = currentAngleRad - startAngleRad;
+            const deltaDeg = deltaRad * (180 / Math.PI);
+
+            const updates = initialStates.map(state => {
+                // Rotate vector (vx, vy) by deltaRad
+                // x' = x cos θ - y sin θ
+                // y' = x sin θ + y cos θ
+                const newVx = state.vx * Math.cos(deltaRad) - state.vy * Math.sin(deltaRad);
+                const newVy = state.vx * Math.sin(deltaRad) + state.vy * Math.cos(deltaRad);
+
+                const newCx = groupCx + newVx;
+                const newCy = groupCy + newVy;
+
+                return {
+                    id: state.id,
+                    changes: {
+                        rotation: state.startRotation + deltaDeg,
+                        x: newCx - state.width / 2,
+                        y: newCy - state.height / 2
+                    }
+                };
+            });
+
+            updateElements(updates);
         };
 
         const onPointerUp = () => {
