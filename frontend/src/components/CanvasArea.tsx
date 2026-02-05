@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useBadgeStore } from '../store/badgeStore';
-import { DraggableElement } from './DraggableElement';
+import { useBadgeStore } from '../store/badgeStore.ts';
+import { DraggableElement } from './DraggableElement.tsx';
 import { clsx } from 'clsx';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 

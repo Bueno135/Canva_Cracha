@@ -1,5 +1,5 @@
 export type ElementType = 'text' | 'image' | 'photo' | 'shape' | 'qr';
-export type ShapeType = 'rectangle' | 'circle' | 'triangle';
+export type ShapeType = 'rectangle' | 'circle' | 'triangle' | 'line';
 
 export interface BadgeElement {
     id: string;

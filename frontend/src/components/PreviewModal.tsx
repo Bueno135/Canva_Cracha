@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useBadgeStore } from '../store/badgeStore';
-import { DraggableElement } from './DraggableElement';
+import { useBadgeStore } from '../store/badgeStore.ts';
+import { DraggableElement } from './DraggableElement.tsx';
 import { X } from 'lucide-react';
 
 interface PreviewModalProps {

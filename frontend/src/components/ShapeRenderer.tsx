@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShapeType } from '../types';
+import type { ShapeType } from '../types';
 
 interface ShapeRendererProps {
     shapeType?: ShapeType;
@@ -44,6 +44,10 @@ export const ShapeRenderer: React.FC<ShapeRendererProps> = ({
                 />
             </svg>
         );
+    }
+
+    if (shapeType === 'line') {
+        return <div style={{ width: '100%', height: '100%', backgroundColor: fillColor }} />;
     }
 
     // Default Rectangle

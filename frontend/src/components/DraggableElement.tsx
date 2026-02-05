@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import type { BadgeElement } from '../types';
-import { useBadgeStore } from '../store/badgeStore';
+import { useBadgeStore } from '../store/badgeStore.ts';
 import { ShapeRenderer } from './ShapeRenderer';
 import { clsx } from 'clsx';
 import { RefreshCcw } from 'lucide-react';
@@ -192,14 +192,19 @@ export const DraggableElement: React.FC<DraggableElementProps> = ({ element }) =
                     />
                 );
             }
+            const isTag = element.content?.startsWith('{{') && element.content?.endsWith('}}');
+
             return (
                 <div
-                    className="w-full h-full whitespace-pre-wrap leading-tight"
+                    className={clsx(
+                        "w-full h-full whitespace-pre-wrap leading-tight",
+                        isTag && "flex items-center justify-center bg-blue-100/50 border border-blue-400/30 rounded px-1"
+                    )}
                     style={{
                         fontSize: element.fontSize,
-                        color: element.color,
+                        color: isTag ? '#2563eb' : element.color,
                         fontFamily: element.fontFamily,
-                        fontWeight: element.fontWeight,
+                        fontWeight: isTag ? '600' : element.fontWeight,
                         fontStyle: element.fontStyle,
                         textDecoration: element.textDecoration,
                         textAlign: element.textAlign,

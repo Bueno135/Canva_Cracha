@@ -1,5 +1,5 @@
 import React from 'react';
-import { useBadgeStore } from '../store/badgeStore';
+import { useBadgeStore } from '../store/badgeStore.ts';
 import { AlignLeft, AlignCenter, AlignRight, AlignJustify, Type, Palette, Trash2, ArrowDown, Bold, Italic, Underline } from 'lucide-react';
 import { clsx } from 'clsx';
 

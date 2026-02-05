@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { BadgeElement, BadgeSide, ElementType, ShapeType } from '../types';
+import type { BadgeElement, BadgeSide, ElementType, ShapeType } from '../types';
 
 interface BadgeStoreState {
     elements: BadgeElement[];
@@ -48,6 +48,10 @@ export const useBadgeStore = create<BadgeStoreState>((set, get) => ({
 
         if (type === 'shape') {
             width = 80; height = 80; content = '';
+            if (opts.shapeType === 'line') {
+                width = 100;
+                height = 4; // Thickness
+            }
         }
         if (type === 'photo') {
             width = 100; height = 100; content = '{{foto}}';
