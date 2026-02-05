@@ -199,6 +199,20 @@ export class CanvasComponent {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
+    // Ignore input fields
+    const target = event.target as HTMLElement;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+
+    if (event.ctrlKey && (event.key === 'c' || event.key === 'C')) {
+      this.badgeService.copySelectedElement();
+      event.preventDefault(); // Prevent browser copy
+    }
+
+    if (event.ctrlKey && (event.key === 'v' || event.key === 'V')) {
+      this.badgeService.pasteElement();
+      event.preventDefault(); // Prevent browser paste
+    }
+
     if (event.key === 'Delete') {
       if (this.selectedIds().length > 0) {
         this.badgeService.removeSelectedElements();

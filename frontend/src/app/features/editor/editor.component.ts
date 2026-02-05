@@ -1,13 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SidebarElementsComponent } from './components/sidebar/sidebar-elements.component';
 import { CanvasComponent } from './components/canvas/canvas.component';
 import { PropertiesPanelComponent } from './components/properties-panel/properties-panel.component';
+import { PreviewDialogComponent } from './components/preview-dialog/preview-dialog.component';
 
 @Component({
   selector: 'app-editor',
   standalone: true,
-  imports: [CommonModule, SidebarElementsComponent, CanvasComponent, PropertiesPanelComponent],
+  imports: [CommonModule, SidebarElementsComponent, CanvasComponent, PropertiesPanelComponent, PreviewDialogComponent],
   template: `
     <div class="editor-layout">
       <header class="top-bar">
@@ -15,6 +16,13 @@ import { PropertiesPanelComponent } from './components/properties-panel/properti
             <span class="logo-icon">☰</span> 
             <span class="app-name">iBolt</span>
         </div>
+        
+        <div class="toolbar-actions">
+           <button class="btn-primary" (click)="showPreview.set(true)">
+             👁️ Visualizar Impressão
+           </button>
+        </div>
+
         <div class="company-logo">Aegea</div>
       </header>
       <div class="workspace">
@@ -47,9 +55,15 @@ import { PropertiesPanelComponent } from './components/properties-panel/properti
           <app-properties-panel></app-properties-panel>
         </div>
       </div>
+      
+      @if (showPreview()) {
+        <app-preview-dialog (close)="showPreview.set(false)"></app-preview-dialog>
+      }
     </div>
   `,
   styleUrl: './editor.component.css'
 
 })
-export class EditorComponent { }
+export class EditorComponent {
+  showPreview = signal(false);
+}

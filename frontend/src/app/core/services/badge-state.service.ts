@@ -145,6 +145,33 @@ export class BadgeStateService {
         this.clearSelection();
     }
 
+    // --- Clipboard ---
+    readonly clipboard = signal<BadgeElement | null>(null);
+
+    copySelectedElement() {
+        const selected = this.selectedElement();
+        if (selected) {
+            this.clipboard.set(JSON.parse(JSON.stringify(selected))); // Deep copy
+        }
+    }
+
+    pasteElement() {
+        const copied = this.clipboard();
+        if (!copied) return;
+
+        const newEl: BadgeElement = {
+            ...copied,
+            id: Math.random().toString(36).substring(2) + Date.now().toString(36),
+            x: copied.x + 20,
+            y: copied.y + 20,
+            zIndex: this.elements().length + 1
+        };
+
+        this.elements.update(els => [...els, newEl]);
+        this.selectElement(newEl.id);
+    }
+
+
     resizeSelectedElement(delta: number) {
         const selectedId = this.selectedElementIds()[0];
         if (!selectedId) return;
