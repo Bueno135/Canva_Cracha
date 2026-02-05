@@ -7,7 +7,7 @@ interface BadgeStoreState {
     activeSide: BadgeSide;
     badgeDimensions: { width: number; height: number };
     scale: number;
-    clipboard: BadgeElement | null;
+    clipboard: BadgeElement[] | null;
 
     // Actions
     setElements: (elements: BadgeElement[]) => void;
@@ -18,6 +18,7 @@ interface BadgeStoreState {
     setActiveSide: (side: BadgeSide) => void;
     setDimensions: (width: number, height: number) => void;
     setScale: (scale: number | ((prev: number) => number)) => void; // Allow functional update
+    setSelectedIds: (ids: string[]) => void;
 
     // Clipboard
     copy: () => void;
@@ -102,6 +103,10 @@ export const useBadgeStore = create<BadgeStoreState>((set, get) => ({
         }));
     },
 
+
+
+    setSelectedIds: (ids) => set({ selectedIds: ids }),
+
     deleteSelected: () => {
         set((state) => ({
             elements: state.elements.filter(el => !state.selectedIds.includes(el.id)),
@@ -120,8 +125,11 @@ export const useBadgeStore = create<BadgeStoreState>((set, get) => ({
     copy: () => {
         const { elements, selectedIds } = get();
         if (selectedIds.length === 0) return;
-        const toCopy = elements.find(el => el.id === selectedIds[0]);
-        if (toCopy) {
+
+        // Filter all selected elements
+        const toCopy = elements.filter(el => selectedIds.includes(el.id));
+
+        if (toCopy.length > 0) {
             // Deep copy to clipboard
             set({ clipboard: JSON.parse(JSON.stringify(toCopy)) });
         }
@@ -129,16 +137,26 @@ export const useBadgeStore = create<BadgeStoreState>((set, get) => ({
 
     paste: () => {
         const { clipboard, elements } = get();
-        if (!clipboard) return;
+        if (!clipboard || clipboard.length === 0) return;
 
-        const newEl: BadgeElement = {
-            ...clipboard,
-            id: Math.random().toString(36).substr(2, 9),
-            x: clipboard.x + 20,
-            y: clipboard.y + 20,
-            zIndex: elements.length + 1
-        };
+        const newElements: BadgeElement[] = [];
+        const newSelectedIds: string[] = [];
+        let maxZ = Math.max(...elements.map(e => e.zIndex), 0);
 
-        set({ elements: [...elements, newEl], selectedIds: [newEl.id] });
+        clipboard.forEach((item) => {
+            maxZ++;
+            const newId = Math.random().toString(36).substr(2, 9);
+            const newEl: BadgeElement = {
+                ...item,
+                id: newId,
+                x: item.x + 20,
+                y: item.y + 20,
+                zIndex: maxZ
+            };
+            newElements.push(newEl);
+            newSelectedIds.push(newId);
+        });
+
+        set({ elements: [...elements, ...newElements], selectedIds: newSelectedIds });
     }
 }));
