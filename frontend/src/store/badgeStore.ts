@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { nanoid } from 'nanoid';
 import type { BadgeElement, BadgeSide, ElementType, ShapeType } from '../types';
 
 interface BadgeStoreState {
@@ -61,7 +62,7 @@ export const useBadgeStore = create<BadgeStoreState>((set, get) => ({
         if (type === 'qr') content = 'https://example.com';
 
         const newEl: BadgeElement = {
-            id: Math.random().toString(36).substr(2, 9),
+            id: nanoid(),
             type,
             x: 20,
             y: 20,
@@ -158,7 +159,7 @@ export const useBadgeStore = create<BadgeStoreState>((set, get) => ({
 
         clipboard.forEach((item) => {
             maxZ++;
-            const newId = Math.random().toString(36).substr(2, 9);
+            const newId = nanoid();
             const newEl: BadgeElement = {
                 ...item,
                 id: newId,

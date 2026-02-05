@@ -1,41 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Sidebar } from './components/Sidebar.tsx';
 import { NavigationSidebar } from './components/NavigationSidebar.tsx';
 import { CanvasArea } from './components/CanvasArea.tsx';
 import { PropertiesPanel } from './components/PropertiesPanel.tsx';
 import { PreviewModal } from './components/PreviewModal.tsx';
-import { useBadgeStore } from './store/badgeStore.ts';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.ts';
 import { Eye, Menu } from 'lucide-react';
-import { clsx } from 'clsx';
 
 function App() {
   const [showPreview, setShowPreview] = useState(false);
-  const {
-    copy, paste, deleteSelected
-  } = useBadgeStore();
 
-  // Keyboard Shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
-
-      if (e.key === 'Delete') {
-        deleteSelected();
-      }
-      if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
-        e.preventDefault();
-        copy();
-      }
-      if (e.ctrlKey && (e.key === 'v' || e.key === 'V')) {
-        e.preventDefault();
-        paste();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copy, paste, deleteSelected]);
+  // Custom Hook for Shortcuts
+  useKeyboardShortcuts();
 
   return (
     <div className="flex flex-col h-screen w-screen bg-brand-bg text-gray-900 overflow-hidden font-sans">

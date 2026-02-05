@@ -12,6 +12,7 @@ export const useFabric = (width: number, height: number) => {
             width,
             height,
             backgroundColor: '#ffffff',
+            enableRetinaScaling: true // Fix for High DPI displays
         });
 
         setFabricCanvas(canvas);
