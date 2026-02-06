@@ -74,36 +74,44 @@ export const FabricCanvas: React.FC<FabricCanvasProps> = ({ width, height }) => 
             const id = target.id;
 
             if (id) {
-                console.log('Object modified, updating store:', id);
 
                 const updates: any = {
                     x: target.left,
                     y: target.top,
                     rotation: target.angle,
-                    // NORMALIZAÇÃO DE ESCALA:
-                    // Fabric usa scaleX/scaleY. Convertemos isso em width/height reais
-                    // para evitar distorções no reload e manter Clean Code.
-                    width: (target.width || 0) * (target.scaleX || 1),
-                    height: (target.height || 0) * (target.scaleY || 1),
-                    scaleX: 1,
-                    scaleY: 1
                 };
 
-                // Se for texto, ajustamos o fontSize também
+                const isImage = target.type === 'image' || target.type === 'photo' || target.type === 'qr';
+
+                if (isImage) {
+                    // IMAGES: Must use Scale. Changing width crops the image.
+                    updates.scaleX = target.scaleX;
+                    updates.scaleY = target.scaleY;
+                    updates.width = target.width;   // Keep original dimensions
+                    updates.height = target.height;
+                } else {
+                    // SHAPES/TEXT: Normalize to Width/Height for clean CSS-like logic
+                    updates.width = (target.width || 0) * (target.scaleX || 1);
+                    updates.height = (target.height || 0) * (target.scaleY || 1);
+                    updates.scaleX = 1;
+                    updates.scaleY = 1;
+                }
+
                 if (target.type === 'text' || target.type === 'i-text' || target.type === 'textbox') {
                     // @ts-ignore
                     const currentFontSize = target.fontSize || 20;
                     // @ts-ignore
                     updates.fontSize = currentFontSize * (target.scaleY || 1);
-                    updates.width = target.width; // Text usually auto-updates width
-                    updates.height = target.height;
+                    // Text specific: If you normalized scale to 1, you must update fontSize.
+                    // Width is already calculated above.
                 }
 
                 updateStoreFromCanvas(id, updates);
 
-                // Reset visual scale on fabric object to match store properties
-                // This prevents visual discrepancy if we assume scale=1 in renderer logic
-                // target.set({ scaleX: 1, scaleY: 1 });
+                // Only reset scale for non-images to avoid "pop"
+                if (!isImage) {
+                    target.set({ scaleX: 1, scaleY: 1 });
+                }
             }
         });
 
@@ -131,8 +139,11 @@ export const FabricCanvas: React.FC<FabricCanvasProps> = ({ width, height }) => 
     };
 
     return (
-        <div className="flex flex-col gap-4 items-center p-4">
-            <div className="border border-gray-300 shadow-md">
+        <div className="flex flex-col gap-4 items-center justify-center bg-gray-100 h-full w-full">
+            <div
+                className="shadow-2xl bg-white"
+                style={{ width, height, position: 'relative' }}
+            >
                 <canvas ref={canvasRef} />
             </div>
         </div>
