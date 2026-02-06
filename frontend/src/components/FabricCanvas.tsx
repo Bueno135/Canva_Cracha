@@ -20,15 +20,28 @@ export const FabricCanvas: React.FC<FabricCanvasProps> = ({ width, height }) => 
     // Referência para controlar se estamos desenhando (evita loops infinitos)
     const isRendering = useRef(false);
 
+    // Flag to skip re-render when update comes from Fabric itself (drag/drop/edit)
+    const skipNextRender = useRef(false);
+
     // 1. Sincronização: Store -> Canvas (Leitura)
     useEffect(() => {
         if (!fabricCanvas) return;
+
+        // Se a atualização veio do próprio canvas (ex: usuário arrastou), não redesenhamos tudo
+        if (skipNextRender.current) {
+            skipNextRender.current = false;
+            return;
+        }
 
         // Flag para ignorar eventos enquanto desenhamos via código
         isRendering.current = true;
 
         // Desliga listeners temporariamente para segurança
         fabricCanvas.off('object:modified');
+        fabricCanvas.off('text:changed');
+        fabricCanvas.off('selection:created');
+        fabricCanvas.off('selection:updated');
+        fabricCanvas.off('selection:cleared');
 
         console.log('Syncing Canvas with Store:', elements);
         renderCanvasFromState(fabricCanvas, elements);
@@ -42,6 +55,12 @@ export const FabricCanvas: React.FC<FabricCanvasProps> = ({ width, height }) => 
 
     // 2. Sincronização: Canvas -> Store (Escrita)
     const attachCanvasListeners = (canvas: fabric.Canvas) => {
+
+        // Helper para atualizar sem disparar re-render do canvas
+        const updateStoreFromCanvas = (id: string, updates: any) => {
+            skipNextRender.current = true; // AVISA O EFFECT: "Eu que mudei, não redesenhe!"
+            updateElement(id, updates);
+        };
 
         // Listener de Modificação (Drag, Resize, Rotate)
         canvas.on('object:modified', (e) => {
@@ -61,20 +80,43 @@ export const FabricCanvas: React.FC<FabricCanvasProps> = ({ width, height }) => 
                     x: target.left,
                     y: target.top,
                     rotation: target.angle,
+                    // NORMALIZAÇÃO DE ESCALA:
+                    // Fabric usa scaleX/scaleY. Convertemos isso em width/height reais
+                    // para evitar distorções no reload e manter Clean Code.
                     width: (target.width || 0) * (target.scaleX || 1),
                     height: (target.height || 0) * (target.scaleY || 1),
+                    scaleX: 1,
+                    scaleY: 1
                 };
 
+                // Se for texto, ajustamos o fontSize também
                 if (target.type === 'text' || target.type === 'i-text' || target.type === 'textbox') {
                     // @ts-ignore
                     const currentFontSize = target.fontSize || 20;
                     // @ts-ignore
                     updates.fontSize = currentFontSize * (target.scaleY || 1);
+                    updates.width = target.width; // Text usually auto-updates width
+                    updates.height = target.height;
                 }
 
-                updateElement(id, updates);
+                updateStoreFromCanvas(id, updates);
+
+                // Reset visual scale on fabric object to match store properties
+                // This prevents visual discrepancy if we assume scale=1 in renderer logic
+                // target.set({ scaleX: 1, scaleY: 1 });
             }
         });
+
+        // Listener de Texto (Edição de Conteúdo)
+        const handleTextChange = (e: any) => {
+            const target = e.target;
+            // @ts-ignore
+            if (target && target.id) {
+                // @ts-ignore
+                updateStoreFromCanvas(target.id, { content: target.text });
+            }
+        };
+        canvas.on('text:changed', handleTextChange);
 
         // Listener de Seleção (Para mostrar propriedades corretas no painel)
         const handleSelection = (e: any) => {
